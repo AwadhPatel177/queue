@@ -63,7 +63,7 @@ const seedData = async () => {
 };
 
 // Database connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/smart_queue';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://awadhpatel177_db_user:4eeDuXoUDsciSy2N@cluster0.c4wkfum.mongodb.net/?appName=Cluster0';
 mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
