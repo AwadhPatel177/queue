@@ -111,14 +111,48 @@ const PatientHome = ({ user, onLogout }) => {
     return () => clearInterval(interval);
   }, [user.mobile, selectedTokenDetail?.id]);
 
-  const handleBook = (e) => {
+  const handleBook = async (e) => {
     e.preventDefault();
+
+    // 1. Save to backend database and capture the MongoDB _id
+    let dbId = null;
+    let dbTokenNumber = null;
+    try {
+      const res = await fetch('http://localhost:5000/api/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientName: patientData.name,
+          mobile: patientData.mobile,
+          age: patientData.age,
+          gender: patientData.gender,
+          symptoms: patientData.symptoms,
+          isEmergency: patientData.isEmergency,
+          hospitalName: selectedHospital.name,
+          department: selectedDept,
+        }),
+      });
+
+      if (res.ok) {
+        const saved = await res.json();
+        dbId = saved._id;                 // MongoDB _id for later status updates
+        dbTokenNumber = saved.tokenNumber; // Use the backend-generated token number
+      } else {
+        const errData = await res.json();
+        console.error('Backend booking error:', errData.message);
+      }
+    } catch (err) {
+      console.error('Could not reach backend, saving locally only:', err);
+    }
+
+    // 2. Save to localStorage for the live queue UI
     const tokens = JSON.parse(localStorage.getItem('tokens') || '[]');
     const hospTokens = tokens.filter(t => t.hospitalId === selectedHospital.id && t.department === selectedDept);
-    const tokenNum = `${selectedDept.substring(0, 3).toUpperCase()}-${hospTokens.length + 1}`;
+    const tokenNum = dbTokenNumber || `${selectedDept.substring(0, 3).toUpperCase()}-${hospTokens.length + 101}`;
 
     const newToken = {
       id: 'tk_' + Date.now(),
+      dbId,                             // ← stores MongoDB _id so dashboard can sync
       tokenNumber: tokenNum,
       patientName: patientData.name,
       patientMobile: patientData.mobile,
@@ -141,6 +175,7 @@ const PatientHome = ({ user, onLogout }) => {
     setView('tokenDetail');
     setActiveTab('tokens');
   };
+
 
   const filteredHospitals = HOSPITALS.filter(h =>
     h.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

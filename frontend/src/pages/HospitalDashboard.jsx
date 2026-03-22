@@ -18,9 +18,12 @@ const HospitalDashboard = ({ user, onLogout }) => {
   const [tokens, setTokens] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const BACKEND = 'http://localhost:5000/api';
+
   const loadTokens = () => {
     const allTokens = JSON.parse(localStorage.getItem('tokens') || '[]');
-    const myTokens = allTokens.filter(t => t.hospitalId === user.id);
+    // Show tokens for this hospital (match by hospitalName or hospitalId)
+    const myTokens = allTokens.filter(t => t.hospitalId === user.id || t.hospitalName === user.name);
     setTokens(myTokens);
   };
 
@@ -30,9 +33,11 @@ const HospitalDashboard = ({ user, onLogout }) => {
     return () => clearInterval(interval);
   }, [refreshKey]);
 
-  const callNextPatient = (dept) => {
+  const callNextPatient = async (dept) => {
     const allTokens = JSON.parse(localStorage.getItem('tokens') || '[]');
-    const waiting = allTokens.filter(t => t.hospitalId === user.id && t.department === dept && t.status === 'Waiting');
+    const waiting = allTokens.filter(
+      t => (t.hospitalId === user.id || t.hospitalName === user.name) && t.department === dept && t.status === 'Waiting'
+    );
     // Emergency patients first, then by time
     waiting.sort((a, b) => {
       if (a.isEmergency && !b.isEmergency) return -1;
@@ -47,17 +52,44 @@ const HospitalDashboard = ({ user, onLogout }) => {
       allTokens[idx].calledAt = new Date().toISOString();
       localStorage.setItem('tokens', JSON.stringify(allTokens));
       loadTokens();
+
+      // Sync to MongoDB if we have the backend token id
+      if (next.dbId) {
+        try {
+          await fetch(`${BACKEND}/token/${next.dbId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Called' })
+          });
+        } catch (err) {
+          console.error('Failed to sync Called status to MongoDB:', err);
+        }
+      }
     }
   };
 
-  const completePatient = (tokenId) => {
+  const completePatient = async (tokenId) => {
     const allTokens = JSON.parse(localStorage.getItem('tokens') || '[]');
     const idx = allTokens.findIndex(t => t.id === tokenId);
     if (idx !== -1) {
+      const dbId = allTokens[idx].dbId;
       allTokens[idx].status = 'Completed';
       allTokens[idx].completedAt = new Date().toISOString();
       localStorage.setItem('tokens', JSON.stringify(allTokens));
       loadTokens();
+
+      // Sync to MongoDB if we have the backend token id
+      if (dbId) {
+        try {
+          await fetch(`${BACKEND}/token/${dbId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Completed' })
+          });
+        } catch (err) {
+          console.error('Failed to sync Completed status to MongoDB:', err);
+        }
+      }
     }
   };
 
