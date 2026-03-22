@@ -118,7 +118,7 @@ const PatientHome = ({ user, onLogout }) => {
     let dbId = null;
     let dbTokenNumber = null;
     try {
-      const res = await fetch('http://localhost:5000/api/book' || 'https://smartqueueai.vercel.app/api/book', {
+      const res = await fetch('https://smartqueueai.vercel.app/api/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
