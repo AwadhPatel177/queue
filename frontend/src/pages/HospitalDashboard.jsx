@@ -18,7 +18,7 @@ const HospitalDashboard = ({ user, onLogout }) => {
   const [tokens, setTokens] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const BACKEND = 'http://localhost:5000/api';
+  const BACKEND = 'http://localhost:5000/api' || 'https://smartqueueai.vercel.app/api';
 
   const loadTokens = () => {
     const allTokens = JSON.parse(localStorage.getItem('tokens') || '[]');

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, User, Phone, Lock, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api/auth';
+const API_URL = 'http://localhost:5000/api/auth' || 'https://smartqueueai.vercel.app/api/auth';
 
 const PatientAuth = ({ onBack, onLogin }) => {
   const [tab, setTab] = useState('signup'); // Default to signup so user creates account first
